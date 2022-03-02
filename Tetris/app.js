@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded',()=> {
     const startBtn = document.querySelector('#start-button');
     const width = 10;
 
+    const NUMROWS = 20;
+    const NUMCOLS = 10;
+
     const jTet = [[0,1],[1,1],[2,1],[2,2]];
     const iTet = [[0,1],[1,1],[2,1],[3,1]];
     const oTet = [[0,0],[1,0],[0,1],[1,1]];
@@ -22,8 +25,7 @@ document.addEventListener('DOMContentLoaded',()=> {
     }
     //console.log(rotate(jTet, 90));
 
-    defaultGrid(10,20);
-    //Creates a default grid sized 16x16 
+    defaultGrid(NUMCOLS,NUMROWS);
     function defaultGrid(x,y) {
         makeRows(y);
         makeColumns(x);
@@ -50,12 +52,12 @@ document.addEventListener('DOMContentLoaded',()=> {
         };
     };
 
-    function getRandomPiece(){
+    function getRandomPiece(location = [math.random()*10,math.random()*2]){
     // Tetrominoes are of the scheme: 
         let piece = {
             color: tetColorPalette[Math.floor(Math.random() * tetColorPalette.length)],
             type: Object.keys(TETS)[Math.floor(Math.random() * Object.keys(TETS).length)],
-            loc: [4,1],
+            loc: math.round(location),
             rot: math.floor(math.random()*4) * 90,
             cubies: []
         };
@@ -86,9 +88,66 @@ document.addEventListener('DOMContentLoaded',()=> {
         });
     }
 
-    draw(getRandomPiece());
-    draw(getRandomPiece());
-    draw(getRandomPiece());
-    draw(getRandomPiece());
-    draw(getRandomPiece());
-})
+    const drawRandom = () => draw(getRandomPiece());
+    // draw(getRandomPiece());
+    // draw(getRandomPiece());
+    // draw(getRandomPiece());
+    // draw(getRandomPiece());
+
+    movementTimer = setInterval(fallCubies, 750);
+    spawnTimer = setInterval(drawRandom,3000);
+
+    function fallCubies(){
+        console.log("Falling!");
+        for (i = NUMROWS-2; i >= 0; i--){
+            for (j = 0; j < NUMCOLS; j++){
+                let gridSquare = document.getElementById(`Cell(${j},${i})`);
+                let cellDown = document.getElementById(`Cell(${j},${i + 1})`);
+                if (cellDown.style.backgroundColor == ""){
+                    cellDown.style.backgroundColor = gridSquare.style.backgroundColor;
+                    gridSquare.style.backgroundColor = "";
+                } else {
+                    //console.log(gridSquare.style.backgroundColor);
+                }
+            }
+        }
+    }
+
+    // function moveCubies(piece,dir){
+    //     let pieceBottom = math.max(piece.cubies.map((cubie) => cubie[1]));
+    //     let pieceTop = math.min(piece.cubies.map((cubie) => cubie[1]));
+    //     let pieceRight = math.max(piece.cubies.map((cubie) => cubie[0]));
+    //     let pieceLeft = math.min(piece.cubies.map((cubie) => cubie[0]));
+        
+    //     let [checkFirst,checkLast] = [0,0];
+
+    //     switch (dir){
+    //         case 2:
+    //             [checkFirst,checkLast] = [pieceBottom, pieceTop];
+    //             piece.cubies = piece.cubies.sort((a,b) => b[1]-a[1])
+
+    //             break;
+    //         case 4:
+    //             [checkFirst,checkLast] = [pieceLeft, pieceRight];
+    //             break;
+    //         case 6:
+    //             [checkFirst,checkLast] = [pieceRight, pieceLeft]
+    //             break;
+    //         case 8:
+    //             [checkFirst, checkLast] = [pieceTop, pieceBottom];
+    //     }
+        
+    //     for (i = checkFirst; i > checkLast; i--) {
+    //         for (j = 0; j < cellNum; j++) {
+    //             try {
+    //                 let cell = document.getElementById(`Cell(${j},${i})`);
+    //                 let downCell
+    //                 gridSquare.classList.add(`cubie-${piece.color}`);
+    //                 gridSquare.style.backgroundColor = piece.color;
+    //             } catch (TypeError) {
+    //                 console.log(`Cell(${j},${i}) doesn't exist`);
+    //             }
+    //         }
+    //     }
+    // }
+});

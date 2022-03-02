@@ -10,8 +10,9 @@
     min-height: 20px;
     display: inline-block;
     margin-right: 2px;
+    background-color: white;
   }
-  
+
 /*
 .cubie-red{
     background-color: red;
