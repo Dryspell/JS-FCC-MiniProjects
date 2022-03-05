@@ -9,6 +9,11 @@
     flex-wrap: wrap;
 }
 
+#plotsGrid{
+    display:grid;
+    flex-wrap: wrap;
+}
+
 .cell {
     border: 1px solid gray;
     min-width: 20px;

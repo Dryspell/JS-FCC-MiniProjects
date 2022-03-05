@@ -20,14 +20,12 @@ document.addEventListener('DOMContentLoaded',()=> {
         let tPrime = math.unit(theta, 'deg');
         let rotMat = [[math.cos(tPrime), -math.sin(tPrime)],
                       [math.sin(tPrime), math.cos(tPrime)]];
-        
         return piece.map((cubie) => math.round(math.multiply(cubie, rotMat)));
     }
 
     function reflect(piece){
         let rotMat = [[-1, 0],
                       [0,1]];
-        
         return piece.map((cubie) => math.round(math.multiply(cubie, rotMat)));
     }
     //console.log(rotate(jTet, 90));
@@ -75,7 +73,8 @@ document.addEventListener('DOMContentLoaded',()=> {
             rot = math.floor(math.random()*4) * 90
         );
     };
-
+    
+    let GRAVITY = '2';
     function spawnPiece(color, type, loc, rot){
         // Tetrominoes are of the scheme: 
         let piece = {
@@ -113,7 +112,61 @@ document.addEventListener('DOMContentLoaded',()=> {
                 }
             },
             move: (dir) => {
-                throw {name: "NotImplementedError", message: `pieceMovement in direction ${dir}`}; 
+                console.log('Move Called')
+                //if (piece != pieces[pieces.length -1]){return;}
+                let dirCheck = true;
+                let nextCubieCoords = [];
+                checkDir: for (i in piece.cubies){
+                    let cubie = piece.cubies[i];
+                    switch(dir){
+                        case '2':
+                            // TODO Check functionality of others so as to replace fall with move
+                            fall();
+                            return;
+                            break;
+                        case '4':
+                            if (cubie[0]-1 >= 0){
+                                nextCubieCoords = [cubie[0]-1, cubie[1]];
+                            } else{
+                                dirCheck = false;
+                                break checkDir;
+                            }
+                            break;
+                        case '6':
+                            if (cubie[0]+1 < NUMCOLS){
+                                nextCubieCoords = [cubie[0]+1, cubie[1]];
+                            } else{
+                                dirCheck = false;
+                                break checkDir;
+                            }
+                            break;
+                        case '8':
+                            if (cubie[1]-1 >=0){
+                                nextCubieCoords = [cubie[0], cubie[1]-1];
+                            } else{
+                                dirCheck = false;
+                                break checkDir;
+                            }
+                            break;
+                    }
+                    console.log(nextCubieCoords);
+                    try {
+                        let nextCubie = document.getElementById(`Cell(${nextCubieCoords[0]},${nextCubieCoords[1]})`);
+                        //console.log(nextCubie)
+                        if (nextCubie.style.backgroundColor == "") {continue checkDir;}
+                        if (JSON.stringify(piece.cubies).indexOf(JSON.stringify([nextCubieCoords[0],nextCubieCoords[1]])) != -1){ continue checkDir;}
+                        checkDir = false;
+                    }
+                    catch (TypeError){console.log(`This error should never throw since we prechecked the existence of the cells`)}
+                };
+                if (dirCheck){
+                    unDraw(piece);
+                    piece.updateCubies(nextCubieCoords);
+                    draw(piece);
+                } else if (GRAVITY == dir){
+                    gameOfLifeTrigger(piece);
+                }
+                //throw {name: "NotImplementedError", message: `pieceMovement in direction ${dir}`}; 
             }
         };
         
@@ -139,23 +192,28 @@ document.addEventListener('DOMContentLoaded',()=> {
     }
 
     function keyCodeController(event){
-        switch (event){
-            case (event.code === 'ArrowUp' || event.code === 'Numpad8'):
+        //console.log(`Keyboard Press heard`, event);
+        switch (event.code){
+            case ('ArrowUp'):
+            case ('Numpad8'):
                 pieces[pieces.length -1].move('8');
                 break;
-            case (event.code === 'ArrowDown' || event.code === 'Numpad2'):
+            case (event.code == 'ArrowDown'):
+            case (event.code == 'Numpad2'):
                 pieces[pieces.length -1].move('2');
                 break;
-            case (event.code === 'ArrowLeft' || event.code === 'Numpad4'):
+            case ('ArrowLeft'):
+            case ('Numpad4'):
                 pieces[pieces.length -1].move('4');
                 break;
-            case (event.code === 'ArrowRight' || event.code === 'Numpad6'):
+            case ('ArrowRight'):
+            case ('Numpad6'):
                 pieces[pieces.length -1].move('6');
                 break;
-            case (event.code === 'Tab'):
+            case ('Tab'):
                 //TODO PauseTheGame
                 break;
-            case (event.code === 'Space'):
+            case ('Space'):
                 //TODO rotate the piece
                 break;
             }
@@ -238,9 +296,9 @@ document.addEventListener('DOMContentLoaded',()=> {
     }
 
     layout = {title: 'Colors of Pieces'};
-    Plotly.newPlot('piecesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Pieces'} );
-    Plotly.newPlot('piecesByTypePlot', [{x: Object.keys(TETS), y: 0, type: 'bar'}], {title: 'Pieces by Type'} );
-    Plotly.newPlot('cubiesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Squares'} );
+    Plotly.newPlot('piecesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Pieces', height:333} );
+    Plotly.newPlot('piecesByTypePlot', [{x: Object.keys(TETS), y: 0, type: 'bar'}], {title: 'Pieces by Type',height:333} );
+    Plotly.newPlot('cubiesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Squares',height:333} );
     //TODO Run Counts for largest path, largest rectangles, largest contiguous space
     updatePlots();
 
