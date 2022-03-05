@@ -1,5 +1,3 @@
-
-
 document.addEventListener('DOMContentLoaded',()=> {
     const scoreDisplay = document.querySelector('#score');
     const startBtn = document.querySelector('#start-button');
@@ -12,7 +10,10 @@ document.addEventListener('DOMContentLoaded',()=> {
     const iTet = [[0,1],[1,1],[2,1],[3,1]];
     const oTet = [[0,0],[1,0],[0,1],[1,1]];
     const sTet = [[0,2],[1,2],[1,1],[2,1]];
-    const TETS = {j: jTet, i: iTet, o: oTet, s: sTet};
+    const zTet = reflect(sTet);
+    const lTet = reflect(jTet);
+    const tTet = [[0,1],[1,1],[2,1],[1,2]];
+    const TETS = {j: jTet, i: iTet, o: oTet, s: sTet, z: zTet, l:lTet, t:tTet};
     const tetColorPalette = ['red', 'blue', 'purple', 'yellow', 'green'];
 
     function rotate(piece, theta){
@@ -22,12 +23,19 @@ document.addEventListener('DOMContentLoaded',()=> {
         
         return piece.map((cubie) => math.round(math.multiply(cubie, rotMat)));
     }
+
+    function reflect(piece){
+        let rotMat = [[-1, 0],
+                      [0,1]];
+        
+        return piece.map((cubie) => math.round(math.multiply(cubie, rotMat)));
+    }
     //console.log(rotate(jTet, 90));
 
     const gridName = 'gridContainer'
-    makeGrid(NUMCOLS,NUMROWS,gridName);
-    //TODO Make miniGrid for next piece preview
     const miniGridName = 'nextUpMiniGrid'
+
+    makeGrid(NUMCOLS,NUMROWS,gridName);
     makeGrid(4,4, miniGridName);
 
     function makeGrid(x,y, container) {
@@ -92,9 +100,7 @@ document.addEventListener('DOMContentLoaded',()=> {
                         
                         // console.log(`FreeFall Failed,\n downcell bgC = ${downCell.style.backgroundColor},\n downcell in piece? ${!piece.cubies.includes([cubie[0],cubie[1]+1])}`);
                         freeToFallCheck = false;
-                    } catch (TypeError){
-                        
-                    }
+                    } catch (TypeError){}
                 };
 
                 if (freeToFallCheck){ //console.log(`Piece at loc ${piece.loc} is Falling!`);
@@ -231,27 +237,11 @@ document.addEventListener('DOMContentLoaded',()=> {
         Plotly.restyle('cubiesByColorPlot', cbcTrace);
     }
 
-    // DEPRECATED FUNCTION FOR INDIVIDUAL FALLING CUBIES
-    // function fallCubies(){
-    //     console.log("Falling!");
-    //     for (i = NUMROWS-2; i >= 0; i--){
-    //         for (j = 0; j < NUMCOLS; j++){
-    //             let gridSquare = document.getElementById(`Cell(${j},${i})`);
-    //             let cellDown = document.getElementById(`Cell(${j},${i + 1})`);
-    //             if (cellDown.style.backgroundColor == ""){
-    //                 cellDown.style.backgroundColor = gridSquare.style.backgroundColor;
-    //                 gridSquare.style.backgroundColor = "";
-    //             } else {
-    //                 //console.log(gridSquare.style.backgroundColor);
-    //             }
-    //         }
-    //     }
-    // }
-
     layout = {title: 'Colors of Pieces'};
     Plotly.newPlot('piecesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Pieces'} );
     Plotly.newPlot('piecesByTypePlot', [{x: Object.keys(TETS), y: 0, type: 'bar'}], {title: 'Pieces by Type'} );
     Plotly.newPlot('cubiesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Squares'} );
+    //TODO Run Counts for largest path, largest rectangles, largest contiguous space
     updatePlots();
 
     movementTimer = setInterval(fallPieces, 500);

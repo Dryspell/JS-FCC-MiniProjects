@@ -4,6 +4,11 @@
     /* background-color: yellow; */
 }
 
+#nextUpMiniGrid {
+    display: grid;
+    flex-wrap: wrap;
+}
+
 .cell {
     border: 1px solid gray;
     min-width: 20px;
@@ -23,6 +28,9 @@
     width: 33%;
 }
 
+.UI{
+    padding: 20px;
+}
 /*
 .cubie-red{
     background-color: red;
