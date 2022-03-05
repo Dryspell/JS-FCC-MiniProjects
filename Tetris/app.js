@@ -87,81 +87,66 @@ document.addEventListener('DOMContentLoaded',()=> {
                 piece.loc = newLocation;
                 piece.cubies = rotate(TETS[type], rot).map((cubie) => math.add(cubie,newLocation));
             },
-            fall: () => {
-                let freeToFallCheck = true;
-                freefallcheck: for (i in piece.cubies) {
-                    let cubie = piece.cubies[i];
-                    if (cubie[1]>= NUMROWS -1){freeToFallCheck = false;}
-                    try {
-                        let downCell = document.getElementById(`Cell(${cubie[0]},${cubie[1]+1})`);
-                        if (downCell.style.backgroundColor == "") {continue freefallcheck;}
-                        if (JSON.stringify(piece.cubies).indexOf(JSON.stringify([cubie[0],cubie[1]+1])) != -1){ continue freefallcheck;}
-                        
-                        // console.log(`FreeFall Failed,\n downcell bgC = ${downCell.style.backgroundColor},\n downcell in piece? ${!piece.cubies.includes([cubie[0],cubie[1]+1])}`);
-                        freeToFallCheck = false;
-                    } catch (TypeError){}
-                };
-
-                if (freeToFallCheck){ //console.log(`Piece at loc ${piece.loc} is Falling!`);
-                    unDraw(piece);
-                    piece.updateCubies([piece.loc[0], piece.loc[1]+1])
-                    draw(piece);
-                } else {
-                    //console.log(`Piece at loc ${piece.loc} cannot fall`);
-                    gameOfLifeTrigger(piece);
-                }
-            },
             move: (dir) => {
-                console.log('Move Called')
+                //console.log(`Move Called in direction ${dir}`);
                 //if (piece != pieces[pieces.length -1]){return;}
-                let dirCheck = true;
+                let dirCheckBool = true;
                 let nextCubieCoords = [];
+                let nextCubieLoc = [];
                 checkDir: for (i in piece.cubies){
                     let cubie = piece.cubies[i];
                     switch(dir){
                         case '2':
-                            // TODO Check functionality of others so as to replace fall with move
-                            fall();
-                            return;
+                            if (cubie[1]+1 < NUMROWS){
+                                nextCubieCoords = [cubie[0], cubie[1]+1];
+                                nextCubieLoc = [piece.loc[0], piece.loc[1]+1];
+                            } else{
+                                dirCheckBool = false;
+                                break checkDir;
+                            }
                             break;
                         case '4':
                             if (cubie[0]-1 >= 0){
                                 nextCubieCoords = [cubie[0]-1, cubie[1]];
+                                nextCubieLoc = [piece.loc[0]-1, piece.loc[1]];
                             } else{
-                                dirCheck = false;
+                                dirCheckBool = false;
                                 break checkDir;
                             }
                             break;
                         case '6':
                             if (cubie[0]+1 < NUMCOLS){
                                 nextCubieCoords = [cubie[0]+1, cubie[1]];
+                                nextCubieLoc = [piece.loc[0]+1, piece.loc[1]];
                             } else{
-                                dirCheck = false;
+                                dirCheckBool = false;
                                 break checkDir;
                             }
                             break;
                         case '8':
                             if (cubie[1]-1 >=0){
                                 nextCubieCoords = [cubie[0], cubie[1]-1];
+                                nextCubieLoc = [piece.loc[0], piece.loc[1]-1];
                             } else{
-                                dirCheck = false;
+                                dirCheckBool = false;
                                 break checkDir;
                             }
                             break;
                     }
-                    console.log(nextCubieCoords);
+                    //console.log(nextCubieCoords);
                     try {
                         let nextCubie = document.getElementById(`Cell(${nextCubieCoords[0]},${nextCubieCoords[1]})`);
                         //console.log(nextCubie)
                         if (nextCubie.style.backgroundColor == "") {continue checkDir;}
                         if (JSON.stringify(piece.cubies).indexOf(JSON.stringify([nextCubieCoords[0],nextCubieCoords[1]])) != -1){ continue checkDir;}
-                        checkDir = false;
+                        dirCheckBool = false;
                     }
                     catch (TypeError){console.log(`This error should never throw since we prechecked the existence of the cells`)}
+                    //Looks like this error does throw...
                 };
-                if (dirCheck){
+                if (dirCheckBool){
                     unDraw(piece);
-                    piece.updateCubies(nextCubieCoords);
+                    piece.updateCubies(nextCubieLoc);
                     draw(piece);
                 } else if (GRAVITY == dir){
                     gameOfLifeTrigger(piece);
@@ -196,18 +181,22 @@ document.addEventListener('DOMContentLoaded',()=> {
         switch (event.code){
             case ('ArrowUp'):
             case ('Numpad8'):
+                event.preventDefault();
                 pieces[pieces.length -1].move('8');
                 break;
-            case (event.code == 'ArrowDown'):
-            case (event.code == 'Numpad2'):
+            case ('ArrowDown'):
+            case ('Numpad2'):
+                event.preventDefault();
                 pieces[pieces.length -1].move('2');
                 break;
             case ('ArrowLeft'):
             case ('Numpad4'):
+                event.preventDefault();
                 pieces[pieces.length -1].move('4');
                 break;
             case ('ArrowRight'):
             case ('Numpad6'):
+                event.preventDefault();
                 pieces[pieces.length -1].move('6');
                 break;
             case ('Tab'):
@@ -253,7 +242,7 @@ document.addEventListener('DOMContentLoaded',()=> {
 
     function fallPieces(){
         //TODO allow for gravity to be changed to any of the four (eight?) directions.
-        pieces.forEach((piece) => piece.fall());
+        pieces.forEach((piece) => piece.move(GRAVITY));
         updatePlots();
     }
 
