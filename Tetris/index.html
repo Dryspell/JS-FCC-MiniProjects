@@ -5,13 +5,30 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="../node_modules/mathjs/lib/browser/math.js" type="text/javascript"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.0.js"></script>
     <script src="app.js" charset="UFT-8"></script>
     <link rel="stylesheet" href="style.css"></link>
     <title>Basic Tetris</title>
 </head>
 <body>
-    <h3>Score: <span id="score">0</span></h3>
-    <button id="start-button">Start!</button>
-    <div id="gridContainer"></div>
+    <div class="pageColumn">
+        <div class="uiColumn">
+            <button id="start-button">Start!</button>
+        </div>
+        <div class="uiColumn">
+            <h3>Score: <span id="score">0</span></h3>
+        </div>
+        <div id="uiColumn">
+            <div id="nextUpMiniGrid"></div>
+        </div>
+
+        <div id="gridContainer"></div>
+    </div>
+    <div class="pageColumn">
+        <div id="piecesByColorPlot"></div>
+        <div id="piecesByTypePlot"></div>
+        <div id="cubiesByColorPlot"></div>
+    </div>
 </body>
 </html>

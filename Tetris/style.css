@@ -11,7 +11,17 @@
     display: inline-block;
     margin-right: 2px;
     background-color: white;
-  }
+}
+
+.pageColumn{
+    float: left;
+    width: 50%;
+}
+
+.uiColumn{
+    float: left;
+    width: 33%;
+}
 
 /*
 .cubie-red{
