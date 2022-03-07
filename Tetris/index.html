@@ -16,6 +16,32 @@
         <div class="UI">
             <div class="uiColumn">
                 <button id="start-button">Start!</button>
+
+                <br> <br>
+                <input type="checkbox" id="autoSpawnCheckbox" name="autoSpawnCheckbox" value="false">
+                <label for="autoSpawnCheckbox">Spawn Pieces on a Time Interval?</label>
+
+                <p>Spawn Rate: <span id="spawnRateText">50</span>%</p>
+                <input type="range" min="1" max="100" value="50" class="slider" id="spawnRateSlider">
+                <br>
+
+                <p>Fall Speed: <span id="fallSpeedText">50</span>%</p>
+                <input type="range" min="1" max="100" value="50" class="slider" id="pieceSpeedSlider">
+
+                <p>Gravity: <span id="gravityText">Down</span></p>
+                <div style="text-align:center;">
+                    <button onmousedown="changeGravity(value)" value="8">Up</button>
+                    <br> <br>
+                    <button onmousedown="changeGravity(value)" value="4">Left</button>
+                    <button onmousedown="changeGravity(value)" value="6">Right</button>
+                    <br> <br>
+                    <button onmousedown="changeGravity(value)" value="2">Down</button>
+                </div>
+                
+                <br>
+                <input type="checkbox" id="gameOfLifeCheckbox" name="gameOfLifeCheckbox" value="false">
+                <label for="gameOfLifeCheckbox">Pieces Play the Game of Life?</label>
+
             </div>
             <div class="uiColumn">
                 <h3>Score: <span id="score">0</span></h3>

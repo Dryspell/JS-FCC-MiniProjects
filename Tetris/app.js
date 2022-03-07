@@ -6,17 +6,17 @@ document.addEventListener('DOMContentLoaded',()=> {
     const NUMROWS = 30;
     const NUMCOLS = 20;
 
-    const jTet = [[0,1],[1,1],[2,1],[2,2]];
-    const iTet = [[0,1],[1,1],[2,1],[3,1]];
-    const oTet = [[0,0],[1,0],[0,1],[1,1]];
-    const sTet = [[0,2],[1,2],[1,1],[2,1]];
+    const jTet = [[-1,0],[0,0],[1,0],[1,1]];
+    const iTet = [[-1,0],[0,0],[1,0],[2,0]];
+    const oTet = [[-1,-1],[0,-1],[-1,0],[0,0]];
+    const sTet = [[-1,1],[0,1],[0,0],[1,0]];
     const zTet = reflect(sTet);
     const lTet = reflect(jTet);
-    const tTet = [[0,1],[1,1],[2,1],[1,2]];
+    const tTet = [[-1,0],[0,0],[1,0],[0,1]];
     const TETS = {j: jTet, i: iTet, o: oTet, s: sTet, z: zTet, l:lTet, t:tTet};
     const tetColorPalette = ['red', 'blue', 'purple', 'yellow', 'green'];
 
-    function rotate(piece, theta){
+    function rotate(piece, theta=90){
         let tPrime = math.unit(theta, 'deg');
         let rotMat = [[math.cos(tPrime), -math.sin(tPrime)],
                       [math.sin(tPrime), math.cos(tPrime)]];
@@ -75,95 +75,132 @@ document.addEventListener('DOMContentLoaded',()=> {
     };
     
     let GRAVITY = '2';
-    function spawnPiece(color, type, loc, rot){
-        // Tetrominoes are of the scheme: 
-        let piece = {
-            color: color,
-            type: type,
-            loc: loc,
-            rot: rot,
-            cubies: [],
-            updateCubies: (newLocation = piece.loc) => {
-                piece.loc = newLocation;
-                piece.cubies = rotate(TETS[type], rot).map((cubie) => math.add(cubie,newLocation));
-            },
-            move: (dir) => {
-                //console.log(`Move Called in direction ${dir}`);
-                //if (piece != pieces[pieces.length -1]){return;}
-                let dirCheckBool = true;
-                let nextCubieCoords = [];
-                let nextCubieLoc = [];
-                checkDir: for (i in piece.cubies){
-                    let cubie = piece.cubies[i];
-                    switch(dir){
-                        case '2':
-                            if (cubie[1]+1 < NUMROWS){
-                                nextCubieCoords = [cubie[0], cubie[1]+1];
-                                nextCubieLoc = [piece.loc[0], piece.loc[1]+1];
-                            } else{
-                                dirCheckBool = false;
-                                break checkDir;
-                            }
-                            break;
-                        case '4':
-                            if (cubie[0]-1 >= 0){
-                                nextCubieCoords = [cubie[0]-1, cubie[1]];
-                                nextCubieLoc = [piece.loc[0]-1, piece.loc[1]];
-                            } else{
-                                dirCheckBool = false;
-                                break checkDir;
-                            }
-                            break;
-                        case '6':
-                            if (cubie[0]+1 < NUMCOLS){
-                                nextCubieCoords = [cubie[0]+1, cubie[1]];
-                                nextCubieLoc = [piece.loc[0]+1, piece.loc[1]];
-                            } else{
-                                dirCheckBool = false;
-                                break checkDir;
-                            }
-                            break;
-                        case '8':
-                            if (cubie[1]-1 >=0){
-                                nextCubieCoords = [cubie[0], cubie[1]-1];
-                                nextCubieLoc = [piece.loc[0], piece.loc[1]-1];
-                            } else{
-                                dirCheckBool = false;
-                                break checkDir;
-                            }
-                            break;
-                    }
-                    //console.log(nextCubieCoords);
-                    try {
-                        let nextCubie = document.getElementById(`Cell(${nextCubieCoords[0]},${nextCubieCoords[1]})`);
-                        //console.log(nextCubie)
-                        if (nextCubie.style.backgroundColor == "") {continue checkDir;}
-                        if (JSON.stringify(piece.cubies).indexOf(JSON.stringify([nextCubieCoords[0],nextCubieCoords[1]])) != -1){ continue checkDir;}
-                        dirCheckBool = false;
-                    }
-                    catch (TypeError){console.log(`This error should never throw since we prechecked the existence of the cells`)}
-                    //Looks like this error does throw...
-                };
-                if (dirCheckBool){
-                    unDraw(piece);
-                    piece.updateCubies(nextCubieLoc);
-                    draw(piece);
-                } else if (GRAVITY == dir){
-                    gameOfLifeTrigger(piece);
-                }
-                //throw {name: "NotImplementedError", message: `pieceMovement in direction ${dir}`}; 
-            }
+
+    class Piece {
+        constructor(color, type, loc, rot){
+            this.color = color;
+            this.type = type;
+            this.loc = loc;
+            this.rot = rot;
+            this.cubies = rotate(TETS[this.type], this.rot).map((cubie) => math.add(cubie,this.loc))
+            this.hasTriggeredASpawn = false;
+        }
+        updateCubies = (newLocation = this.loc) => {
+            this.unDraw();
+            this.loc = newLocation;
+            this.cubies = rotate(TETS[this.type], this.rot).map((cubie) => math.add(cubie,this.loc));
+            this.draw();
         };
-        
-        piece.updateCubies();
+        rotate = (theta) => {
+            console.log('Rotating Piece', this.rot, this.cubies);
+            this.rot += theta;
+            this.updateCubies();
+            console.log('Rotation Complete', this.rot, this.cubies);
+            return this;
+        };
+        unDraw = () => {
+            this.cubies.forEach((cubie) => {
+                try {
+                    let gridSquare = document.getElementById(`Cell(${cubie[0]},${cubie[1]})`);
+                    gridSquare.classList.remove(`cubie-${this.color}`);
+                    gridSquare.style.backgroundColor = "";
+                } catch (TypeError){
+                    //console.log(`Cubie ${cubie} not present on screen`);
+                }
+            });
+        }
+        draw = () => {
+            this.cubies.forEach((cubie) => {
+                try {
+                    let gridSquare = document.getElementById(`Cell(${cubie[0]},${cubie[1]})`);
+                    gridSquare.classList.add(`cubie-${this.color}`);
+                    gridSquare.style.backgroundColor = this.color;
+                } catch (TypeError) {
+                    //console.log(`Cubie ${cubie} doesn't fit in the grid`);
+                }
+            });
+        }
+        move = (dir) => {
+            //console.log(`Move Called in direction ${dir}`);
+            //if (piece != pieces[pieces.length -1]){return;}
+            let dirCheckBool = true;
+            let nextCubieCoords = [];
+            let nextCubieLoc = [];
+            checkDir: for (i in this.cubies){
+                let cubie = this.cubies[i];
+                switch(dir){
+                    case '2':
+                        if (cubie[1]+1 < NUMROWS){
+                            nextCubieCoords = [cubie[0], cubie[1]+1];
+                            nextCubieLoc = [this.loc[0], this.loc[1]+1];
+                        } else{
+                            dirCheckBool = false;
+                            break checkDir;
+                        }
+                        break;
+                    case '4':
+                        if (cubie[0]-1 >= 0){
+                            nextCubieCoords = [cubie[0]-1, cubie[1]];
+                            nextCubieLoc = [this.loc[0]-1, this.loc[1]];
+                        } else{
+                            dirCheckBool = false;
+                            break checkDir;
+                        }
+                        break;
+                    case '6':
+                        if (cubie[0]+1 < NUMCOLS){
+                            nextCubieCoords = [cubie[0]+1, cubie[1]];
+                            nextCubieLoc = [this.loc[0]+1, this.loc[1]];
+                        } else{
+                            dirCheckBool = false;
+                            break checkDir;
+                        }
+                        break;
+                    case '8':
+                        if (cubie[1]-1 >=0){
+                            nextCubieCoords = [cubie[0], cubie[1]-1];
+                            nextCubieLoc = [this.loc[0], this.loc[1]-1];
+                        } else{
+                            dirCheckBool = false;
+                            break checkDir;
+                        }
+                        break;
+                }
+                //console.log(nextCubieCoords);
+                try {
+                    let nextCubie = document.getElementById(`Cell(${nextCubieCoords[0]},${nextCubieCoords[1]})`);
+                    //console.log(nextCubie)
+                    if (nextCubie.style.backgroundColor == "") {continue checkDir;}
+                    if (JSON.stringify(this.cubies).indexOf(JSON.stringify([nextCubieCoords[0],nextCubieCoords[1]])) != -1){ continue checkDir;}
+                    dirCheckBool = false;
+                }
+                catch (TypeError){/*Looks like this error does throw despite minor efforts to precheck cells */}
+            };
+            if (dirCheckBool){
+                this.updateCubies(nextCubieLoc);
+            } else if (GRAVITY == dir){ //This is the case we were falling and can't move any more
+                if (!autoSpawnBool && !this.hasTriggeredASpawn){
+                    this.hasTriggeredASpawn = true;
+                    spawnRandomPiece();
+                }
+                if (gameOfLifeBool){
+                    gameOfLifeTrigger(this);
+                }
+            }
+            updateScore(this);
+            //throw {name: "NotImplementedError", message: `pieceMovement in direction ${dir}`}; 
+        }
+    }
+
+    function spawnPiece(color, type, loc, rot){
+        let piece = new Piece(color, type, loc, rot);
+
         let canSpawn = true;
         spawnCheck: for (i in piece.cubies){
             try{
                 let cubie = piece.cubies[i];
                 if (document.getElementById(`Cell(${cubie[0]},${cubie[1]})`).style.backgroundColor != "") {canSpawn = false; break spawnCheck;}
-            } catch (TypeError){
-
-            }
+            } catch (TypeError){}
         }
         if (!canSpawn) {
             console.log(`Couldn't spawn piece of shape ${type} at location ${loc}`); 
@@ -171,79 +208,184 @@ document.addEventListener('DOMContentLoaded',()=> {
         } else {
             console.log(`Spawned piece`, piece);
             pieces.push(piece);
+            piece.draw();
             updatePlots();
             return piece;
         }
     }
 
-    function keyCodeController(event){
+    function keyCodeDownController(event){
         //console.log(`Keyboard Press heard`, event);
         switch (event.code){
             case ('ArrowUp'):
+            case ('KeyW'):
             case ('Numpad8'):
                 event.preventDefault();
                 pieces[pieces.length -1].move('8');
                 break;
             case ('ArrowDown'):
+            case ('KeyS'):
             case ('Numpad2'):
                 event.preventDefault();
                 pieces[pieces.length -1].move('2');
                 break;
             case ('ArrowLeft'):
+            case ('KeyA'):
             case ('Numpad4'):
                 event.preventDefault();
                 pieces[pieces.length -1].move('4');
                 break;
             case ('ArrowRight'):
+            case ('KeyD'):
             case ('Numpad6'):
                 event.preventDefault();
                 pieces[pieces.length -1].move('6');
                 break;
             case ('Tab'):
                 //TODO PauseTheGame
+                event.preventDefault();
                 break;
             case ('Space'):
-                //TODO rotate the piece
+                event.preventDefault();
+                pieces[pieces.length -1].rotate(90);
+                break;
+            case ('ShiftLeft'):
+            case ('ShiftRight'):
+                event.preventDefault();
+                setMovementTimer(math.round(3 * fallSpeedText.innerHTML));
                 break;
             }
     };
-    document.addEventListener('keyup', keyCodeController);
+    document.addEventListener('keydown', keyCodeDownController);
+
+    function keyCodeUpController(event){
+        switch (event.code){
+            case ('ShiftLeft'):
+            case ('ShiftRight'):
+                event.preventDefault();
+                setMovementTimer();
+                break;
+        }
+    }
+    document.addEventListener('keyup', keyCodeUpController);
+
+    let gameOfLifeCheckbox = document.getElementById("gameOfLifeCheckbox");
+    let gameOfLifeBool = gameOfLifeCheckbox.checked;
+    gameOfLifeCheckbox.addEventListener('change', (event) => {
+        gameOfLifeBool = gameOfLifeCheckbox.checked;
+    });
 
     function gameOfLifeTrigger(piece){
         //TODO 
     }
 
-    function draw(piece){
-        if (!piece) {return;}
-        piece.cubies.forEach((cubie) => {
-            try {
-                let gridSquare = document.getElementById(`Cell(${cubie[0]},${cubie[1]})`);
-                gridSquare.classList.add(`cubie-${piece.color}`);
-                gridSquare.style.backgroundColor = piece.color;
-            } catch (TypeError) {
-                //console.log(`Cubie ${cubie} doesn't fit in the grid`);
-            }
-        });
-    };
-
-    function unDraw(piece){
-        piece.cubies.forEach((cubie) => {
-            try {
-                let gridSquare = document.getElementById(`Cell(${cubie[0]},${cubie[1]})`);
-                gridSquare.classList.remove(`cubie-${color}`);
-                gridSquare.style.backgroundColor = "";
-            } catch (TypeError){
-                //console.log(`Cubie ${cubie} not present on screen`);
-            }
-        });
-    }
-
-    const drawRandom = () => draw(spawnRandomPiece());
+    const drawRandom = () => {spawnRandomPiece()};
 
     function fallPieces(){
-        //TODO allow for gravity to be changed to any of the four (eight?) directions.
+        //TODO allow for gravity to be changed to any of the four directions.
+        //console.log(pieces);
         pieces.forEach((piece) => piece.move(GRAVITY));
         updatePlots();
+    }
+
+    let bottom = [];
+    let top = [];
+    function updateGravity(dir){
+        bottom = [];
+        top = [];
+        switch(GRAVITY){
+            case '2':
+                for (i = 0; i < NUMCOLS; i++){
+                    bottom.push([i,NUMROWS-1]);
+                    top.push([i,0]);
+                }
+                break;
+            case '4':
+                for (i = 0; i < NUMROWS; i++){
+                    bottom.push([0,i]);
+                    top.push([NUMCOLS -1, i]);
+                }
+                break;
+            case '6':
+                for (i = 0; i < NUMROWS; i++){
+                    bottom.push([NUMCOLS -1, i]);
+                    top.push([0,i]);
+                }
+                break;
+            case '8':
+                for (i = 0; i < NUMCOLS; i++){
+                    bottom.push([i,0]);
+                    top.push([i,NUMROWS-1]);
+                }
+                break;
+        }
+    }
+
+    let scoreHist = [];
+    function updateScore(piece = null){
+        let rowsToCheck = new Set();
+        let colsToCheck = new Set();
+        if (GRAVITY == '2' || GRAVITY == '8'){
+            if (piece) {
+                piece.cubies.forEach((cubie) => {
+                    rowsToCheck.add(cubie[1]);
+                });
+            } else {
+                for (let i = 0; i < NUMROWS; i++){
+                    rowsToCheck.add(i);
+                }
+            }
+            for (let i = 0; i < NUMCOLS; i++){
+                colsToCheck.add(i);
+            }
+
+            let fullRowsCount = 0;
+            let fullRows = {};
+            for (let i of rowsToCheck){
+                let fullRow = true;
+                let colorsCountDict = {};
+                checkFullRow: for (let j of colsToCheck){
+                    try{
+                        let cellColor = document.getElementById(`Cell(${j},${i})`).style.backgroundColor;
+                        if (cellColor  == ""){
+                            fullRow = false;
+                            break checkFullRow;
+                        } else {
+                            colorsCountDict[cellColor] = colorsCountDict[cellColor]? colorsCountDict[cellColor] +1 : 1;
+                        }
+                    } catch (TypeError){}
+                }
+                if (fullRow){
+                    fullRowsCount++;
+                    fullRows[i] = Object.assign({},colorsCountDict);
+                }
+            }
+            if (fullRowsCount && (JSON.stringify([fullRowsCount, fullRows]) != JSON.stringify(scoreHist[scoreHist.length -1]))){
+                scoreHist.push([fullRowsCount, fullRows]);
+                //Clear Out Scoring Rows
+                Object.keys(fullRows).forEach((row) => {
+                    for (i = 0; i < NUMCOLS; i++){
+                        document.getElementById(`Cell(${i},${parseInt(row)})`).style.backgroundColor = "";
+                    }
+                });
+                console.log(`Score History has been updated with: `, scoreHist[scoreHist.length -1])
+            }
+
+        } else if (GRAVITY == '4' || GRAVITY == '6'){
+            if (piece) {
+                piece.cubies.forEach((cubie) => {
+                    colsToCheck.add(cubie[1]);
+                });
+            } else {
+                for (let i = 0; i < NUMCOLS; i++){
+                    colsToCheck.add(i);
+                }
+            }
+            for (let i = 0; i < NUMROWS; i++){
+                rowsToCheck.add(i);
+            }
+        }
+
     }
 
     function updatePlots(){
@@ -291,7 +433,65 @@ document.addEventListener('DOMContentLoaded',()=> {
     //TODO Run Counts for largest path, largest rectangles, largest contiguous space
     updatePlots();
 
-    movementTimer = setInterval(fallPieces, 500);
-    drawRandom();
-    spawnTimer = setInterval(drawRandom,2500);
+    let gameRunning = false;
+    let initialStart = false;
+    let startPauseButton = document.getElementById('start-button');
+    startPauseButton.addEventListener('click',startPause);
+    let spawnTimer = 0;
+    let movementTimer = 0;
+    function startPause(){
+        if (!initialStart){
+            initialStart = true;
+            drawRandom();
+        }
+        if (!gameRunning){
+            gameRunning = true;
+            setSpawnTimer();
+            setMovementTimer();
+        } else{
+            gameRunning = false;
+            clearInterval(spawnTimer);
+            clearInterval(movementTimer);
+        }
+    }
+    let spawnRateSlider = document.getElementById("spawnRateSlider");
+    let spawnRateText = document.getElementById("spawnRateText");
+    spawnRateText.innerHTML = spawnRateSlider.value; // Display the default slider value
+
+    spawnRateSlider.oninput = function() {
+        spawnRateText.innerHTML = this.value;
+        setSpawnTimer();
+    };
+
+    let pieceSpeedSlider = document.getElementById("pieceSpeedSlider");
+    let fallSpeedText = document.getElementById("fallSpeedText");
+    fallSpeedText.innerHTML = pieceSpeedSlider.value; // Display the default slider value
+
+    pieceSpeedSlider.oninput = function() {
+        fallSpeedText.innerHTML = this.value;
+        setMovementTimer();
+    };
+
+    function setMovementTimer (value = fallSpeedText.innerHTML){
+        if (gameRunning){
+            clearInterval(movementTimer);
+            movementTimer = setInterval(fallPieces,1000 - value * 0.01 * 1000);
+        }
+    }
+
+    let autoSpawnCheckbox = document.getElementById("autoSpawnCheckbox");
+    let autoSpawnBool = autoSpawnCheckbox.checked;
+    autoSpawnCheckbox.addEventListener('change', (event) => {
+        autoSpawnBool = autoSpawnCheckbox.checked;
+        setSpawnTimer();
+    });
+    function setSpawnTimer (value = spawnRateText.innerHTML){
+        console.log(`AutoSpawn is set to ${autoSpawnBool}`);
+        if (gameRunning && autoSpawnBool){
+            clearInterval(spawnTimer);
+            spawnTimer = setInterval(drawRandom,5000 - value * 0.01 * 5000);
+        } else {
+            clearInterval(spawnTimer);
+        }
+    }
 });
