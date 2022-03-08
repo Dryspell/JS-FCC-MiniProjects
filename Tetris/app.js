@@ -3,8 +3,8 @@ document.addEventListener('DOMContentLoaded',()=> {
     const startBtn = document.querySelector('#start-button');
     const width = 10;
 
-    const NUMROWS = 30;
-    const NUMCOLS = 20;
+    const NUMROWS = 20;
+    const NUMCOLS = 10;
 
     const jTet = [[-1,0],[0,0],[1,0],[1,1]];
     const iTet = [[-1,0],[0,0],[1,0],[2,0]];
@@ -87,14 +87,19 @@ document.addEventListener('DOMContentLoaded',()=> {
         }
         updateCubies = (newLocation = this.loc) => {
             this.unDraw();
+            this.cubies = this.cubies.map((cubie) => math.subtract(cubie, this.loc))
             this.loc = newLocation;
-            this.cubies = rotate(TETS[this.type], this.rot).map((cubie) => math.add(cubie,this.loc));
+            this.cubies = this.cubies.map((cubie) => math.add(cubie,this.loc));
             this.draw();
         };
         rotate = (theta) => {
             console.log('Rotating Piece', this.rot, this.cubies);
             this.rot += theta;
-            this.updateCubies();
+            this.unDraw();
+            this.cubies = this.cubies.map((cubie) => math.subtract(cubie, this.loc))
+            this.cubies = rotate(this.cubies, theta);
+            this.cubies = this.cubies.map((cubie) => math.add(cubie,this.loc));
+            this.draw();
             console.log('Rotation Complete', this.rot, this.cubies);
             return this;
         };
@@ -122,7 +127,6 @@ document.addEventListener('DOMContentLoaded',()=> {
         }
         move = (dir) => {
             //console.log(`Move Called in direction ${dir}`);
-            //if (piece != pieces[pieces.length -1]){return;}
             let dirCheckBool = true;
             let nextCubieCoords = [];
             let nextCubieLoc = [];
@@ -282,8 +286,6 @@ document.addEventListener('DOMContentLoaded',()=> {
     const drawRandom = () => {spawnRandomPiece()};
 
     function fallPieces(){
-        //TODO allow for gravity to be changed to any of the four directions.
-        //console.log(pieces);
         pieces.forEach((piece) => piece.move(GRAVITY));
         updatePlots();
     }
@@ -322,6 +324,8 @@ document.addEventListener('DOMContentLoaded',()=> {
     }
 
     let scoreHist = [];
+    let totalScore = 0;
+    let totalScorebyColor = {};
     function updateScore(piece = null){
         let rowsToCheck = new Set();
         let colsToCheck = new Set();
@@ -342,6 +346,7 @@ document.addEventListener('DOMContentLoaded',()=> {
             let fullRowsCount = 0;
             let fullRows = {};
             for (let i of rowsToCheck){
+                if (i < 0){continue;}
                 let fullRow = true;
                 let colorsCountDict = {};
                 checkFullRow: for (let j of colsToCheck){
@@ -360,16 +365,39 @@ document.addEventListener('DOMContentLoaded',()=> {
                     fullRows[i] = Object.assign({},colorsCountDict);
                 }
             }
-            if (fullRowsCount && (JSON.stringify([fullRowsCount, fullRows]) != JSON.stringify(scoreHist[scoreHist.length -1]))){
-                scoreHist.push([fullRowsCount, fullRows]);
+            if (fullRowsCount){
+                scoreHist.push(Object.assign({},{count: fullRowsCount, scoringRows: fullRows}));
                 //Clear Out Scoring Rows
                 Object.keys(fullRows).forEach((row) => {
-                    for (i = 0; i < NUMCOLS; i++){
-                        document.getElementById(`Cell(${i},${parseInt(row)})`).style.backgroundColor = "";
-                    }
+                    pieces.forEach((piece) => {
+                        let indicesToDelete = [];
+                        for (i in piece.cubies){
+                            let cubie = piece.cubies[i];
+                            if (cubie[1] == row){
+                                indicesToDelete.push(i);
+                            };
+                        }
+                        piece.unDraw();
+                        indicesToDelete.sort((a,b) => b-a);
+                        for (index of indicesToDelete){piece.cubies.splice(index,1);}
+                        piece.draw();
+                        // if (indicesToDelete) {console.log(`Piece with Deleted Components: `, piece);}
+                    });
                 });
-                console.log(`Score History has been updated with: `, scoreHist[scoreHist.length -1])
+                console.log(`Score History has been updated with: `, scoreHist[scoreHist.length -1]);
             }
+            //Tally 
+            totalScorebyColor = {};
+            totalScore = 0;
+            scoreHist.forEach((moment) => {
+                //console.log(moment);
+                Object.keys(moment.scoringRows).forEach((row) => {
+                    Object.keys(moment.scoringRows[row]).forEach((color) => {
+                        totalScorebyColor[color] = totalScorebyColor[color]? totalScorebyColor[color] + moment.scoringRows[row][color] : moment.scoringRows[row][color]; 
+                        totalScore += moment.scoringRows[row][color];
+                    });
+                });
+            });
 
         } else if (GRAVITY == '4' || GRAVITY == '6'){
             if (piece) {
@@ -385,7 +413,11 @@ document.addEventListener('DOMContentLoaded',()=> {
                 rowsToCheck.add(i);
             }
         }
-
+        document.getElementById('score').innerHTML = totalScore;
+        document.getElementById('scoreByColor').innerHTML = "";
+        Object.keys(totalScorebyColor).forEach((color) => {
+            document.getElementById('scoreByColor').innerHTML += `<span style="color:${color}"> ${totalScorebyColor[color]} </span>`;
+        });
     }
 
     function updatePlots(){
