@@ -183,6 +183,7 @@ document.addEventListener('DOMContentLoaded',()=> {
             if (dirCheckBool){
                 this.updateCubies(nextCubieLoc);
             } else if (GRAVITY == dir){ //This is the case we were falling and can't move any more
+                updateScore(this);
                 if (!autoSpawnBool && !this.hasTriggeredASpawn){
                     this.hasTriggeredASpawn = true;
                     spawnRandomPiece();
@@ -191,7 +192,6 @@ document.addEventListener('DOMContentLoaded',()=> {
                     gameOfLifeTrigger(this);
                 }
             }
-            updateScore(this);
             //throw {name: "NotImplementedError", message: `pieceMovement in direction ${dir}`}; 
         }
     }
@@ -474,14 +474,17 @@ document.addEventListener('DOMContentLoaded',()=> {
     function startPause(){
         if (!initialStart){
             initialStart = true;
+            startPauseButton.innerHTML = "Pause";
             drawRandom();
         }
         if (!gameRunning){
             gameRunning = true;
+            startPauseButton.innerHTML = "Pause";
             setSpawnTimer();
             setMovementTimer();
         } else{
             gameRunning = false;
+            startPauseButton.innerHTML = "Resume";
             clearInterval(spawnTimer);
             clearInterval(movementTimer);
         }
