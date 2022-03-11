@@ -12,6 +12,8 @@
 #plotsGrid{
     display:grid;
     flex-wrap: wrap;
+    grid-template-columns: repeat(2,1fr);
+    grid-auto-rows: 300px;
 }
 
 .cell {
@@ -51,7 +53,7 @@
     -webkit-transition: .2s;
     transition: opacity .2s;
 }
-  
+
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -61,7 +63,7 @@
     background: #04AA6D;
     cursor: pointer;
 }
-  
+
 .slider::-moz-range-thumb {
     width: 25px;
     height: 25px;

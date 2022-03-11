@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded',()=> {
                 }
             }
             if (fullRowsCount){
-                scoreHist.push(Object.assign({},{count: fullRowsCount, scoringRows: fullRows}));
+                scoreHist.push(Object.assign({},{count: fullRowsCount, scoringCubies: fullRows}));
                 //Clear Out Scoring Rows
                 Object.keys(fullRows).forEach((row) => {
                     pieces.forEach((piece) => {
@@ -390,10 +390,10 @@ document.addEventListener('DOMContentLoaded',()=> {
             totalScore = 0;
             scoreHist.forEach((moment) => {
                 //console.log(moment);
-                Object.keys(moment.scoringRows).forEach((row) => {
-                    Object.keys(moment.scoringRows[row]).forEach((color) => {
-                        totalScorebyColor[color] = totalScorebyColor[color]? totalScorebyColor[color] + moment.scoringRows[row][color] : moment.scoringRows[row][color]; 
-                        totalScore += moment.scoringRows[row][color];
+                Object.keys(moment.scoringCubies).forEach((row) => {
+                    Object.keys(moment.scoringCubies[row]).forEach((color) => {
+                        totalScorebyColor[color] = totalScorebyColor[color]? totalScorebyColor[color] + moment.scoringCubies[row][color] : moment.scoringCubies[row][color]; 
+                        totalScore += moment.scoringCubies[row][color];
                     });
                 });
             });
@@ -454,59 +454,84 @@ document.addEventListener('DOMContentLoaded',()=> {
             type: 'bar'
         }
         Plotly.restyle('cubiesByColorPlot', cbcTrace);
-
-        let scoreHistColorTraces = [];
-        for (color of tetColorPalette){
-            scoreHistColorTraces.push({
-                x: scoreHist.map(elem => elem.index),
-                y: scoreHist.map(elem => elem.scoringRows[color]),
-                name: `History ${color}`,
-                mode: 'lines',
-                line: {
-                    color: color,
-                    size: 12,
-                }
-            });
-        }
-        console.log('scoreHistColorTraces', scoreHistColorTraces);
-        //Plotly.restyle('historyByColorPlot', scoreHistColorTraces);
-
-        let scoreHistColorPartialSumsTraces = [];
-        let xaxis = scoreHist.map(elem => elem.index);
-        for (color of tetColorPalette){
-            let scoringRowsByColor = scoreHist.map(elem => elem.scoringRows[color]);
-            let yaxis = [];
-            for (i = 0; i < xaxis.length; i++){
-                yaxis.push(!yaxis ? scoringRowsByColor[0] : yaxis[yaxis.length -1] + scoringRowsByColor[i]);
-            }
-
-            scoreHistColorPartialSumsTraces.push({
-                x: xaxis,
-                y: yaxis,
-                name: `Total: ${color}`,
-                mode: 'lines',
-                line: {
-                    color: color,
-                    size: 12,
-                }
-            });
-        }
-        console.log('scoreHistColorPartialSumsTraces', scoreHistColorPartialSumsTraces);
-        //Plotly.restyle('totalByColorPlot', scoreHistColorPartialSumsTraces);
         
-        let scoreHistRowCounts = scoreHist.map(elem => elem.count);
-        console.log('scoreHistRowCounts', scoreHistRowCounts);
+        if (scoreHist.length){
+            console.log('scoreHist', scoreHist);
+            let scoreHistColorTraces = [];
+            let scoreHistColorPartialSumsTraces = [];
+            let xaxis = getIndexArray(scoreHist);
+            for (color of tetColorPalette){
+                let yaxisRowSums = [];
+                let yaxisRowPartialSums = [];
+                for (i of xaxis){
+                    let rowsSum = 0;
+                    for (scoringRow of Object.values(scoreHist[i].scoringCubies)){
+                        //console.log(`ScoringRow is:`, scoringRow);
+                        rowsSum += scoringRow[color] ? scoringRow[color] : 0;
+                    }
+                    //console.log(`rowsSum is ${rowsSum} for the color: ${color}`);
+                    yaxisRowSums.push(rowsSum);
+                    yaxisRowPartialSums.push(!yaxisRowPartialSums.length ?
+                        rowsSum : yaxisRowPartialSums[yaxisRowPartialSums.length -1] + rowsSum);
+                }
+                scoreHistColorTraces.push({
+                    x: xaxis,
+                    y: yaxisRowSums,
+                    name: `History ${color}`,
+                    mode: 'lines',
+                    line: {
+                        color: color,
+                        size: 12,
+                    }
+                });
+                scoreHistColorPartialSumsTraces.push({
+                    x: xaxis,
+                    y: yaxisRowPartialSums,
+                    name: `Total: ${color}`,
+                    mode: 'lines',
+                    line: {
+                        color: color,
+                        size: 12,
+                    }
+                });
+            }
+            console.log('scoreHistColorTraces', scoreHistColorTraces);
+            //Plotly.restyle('historyByColorPlot', scoreHistColorTraces);
+            console.log('scoreHistColorPartialSumsTraces', scoreHistColorPartialSumsTraces);
+            Plotly.react('totalByColorPlot', scoreHistColorPartialSumsTraces,document.getElementById('totalByColorPlot').layout);
+
+            let scoreHistRowCounts = scoreHist.map(elem => elem.count);
+            console.log('scoreHistRowCounts', scoreHistRowCounts);
+        }
     }
 
-    Plotly.newPlot('piecesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Pieces', height:333} );
-    Plotly.newPlot('piecesByTypePlot', [{x: Object.keys(TETS), y: 0, type: 'bar'}], {title: 'Pieces by Type', height:333} );
-    Plotly.newPlot('cubiesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}], {title: 'Colors of Squares',height:333} );
-    Plotly.newPlot('historyByColorPlot', [{x: 0, y: 0, type: 'line'}], {title: 'History of Scoring Squares by Color',height:333} );
-    Plotly.newPlot('totalByColorPlot', [{x: 0, y: 0, type: 'line'}], {title: 'Total of Scoring Squares by Color',height:333} );
+    const getIndexArray = (arr) => {return arr.map(elem => arr.indexOf(elem));}
+    const plotConfig = {responsive: true};
+    Plotly.newPlot('piecesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}],
+        {title: 'Colors of Pieces',height: 300, automargin:true, xaxis: {title: "Color"}, yaxis: {title: "Count"}},
+        plotConfig );
+    Plotly.newPlot('piecesByTypePlot', [{x: Object.keys(TETS), y: 0, type: 'bar'}],
+        {title: 'Pieces by Type',height: 300, automargin:true, xaxis: {title: "Type"}, yaxis: {title: "Count"}},
+        plotConfig );
+    Plotly.newPlot('cubiesByColorPlot', [{x: tetColorPalette, y: 0, type: 'bar'}],
+        {title: 'Colors of Squares',height: 300, automargin:true, xaxis: {title: "Color"}, yaxis: {title: "Count"}},
+        plotConfig );
+        
+    // TODO: Combine these plots
+    Plotly.newPlot('historyByColorPlot', [{x: 0, y: 0, type: 'line'}],
+        {title: 'History of Scoring Squares by Color',height: 300, automargin:true, xaxis: {title: "Scoring Moments"}, yaxis: {title: "Count"}},
+        plotConfig );
+    Plotly.newPlot('totalByColorPlot', [{x: 0, y: 0, type: 'line'}],
+        {title: 'Total of Scoring Squares by Color',height: 300, automargin:true, xaxis: {title: "Scoring Moments"}, yaxis: {title: "Total"}},
+        plotConfig );
 
     // TODO: Combine these plots
-    Plotly.newPlot('historyOfScoringRows', [{x: 0, y: 0, type: 'line'}], {title: 'History of Scoring Rows',height:333} );
-    Plotly.newPlot('totalScoringRows', [{x: 0, y: 0, type: 'line'}], {title: 'Total Scoring Rows',height:333} );
+    Plotly.newPlot('historyOfScoringCubies', [{x: 0, y: 0, type: 'line'}],
+        {title: 'History of Scoring Rows',height: 300, automargin:true, xaxis: {title: "Scoring Moments"}, yaxis: {title: "Count"}},
+        plotConfig );
+    Plotly.newPlot('totalScoringCubies', [{x: 0, y: 0, type: 'line'}],
+        {title: 'Total Scoring Rows',height: 300, automargin:true, xaxis: {title: "Scoring Moments"}, yaxis: {title: "Total"}},
+        plotConfig );
     //TODO Run Counts for largest path, largest rectangles, largest contiguous space
     updatePlots();
 
